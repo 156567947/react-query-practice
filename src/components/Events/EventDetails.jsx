@@ -1,17 +1,26 @@
 import { Link, Outlet, useNavigate } from "react-router-dom";
-import { useMutation, useQuery, QueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import Header from "../Header.jsx";
-import { fetchEvent, deleteEvent } from "../../util/http.js";
+import { fetchEvent, deleteEvent, queryClient } from "../../util/http.js";
 import { useParams } from "react-router-dom";
 import ErrorBlock from "../UI/ErrorBlock.jsx";
 import { useState } from "react";
+import Modal from "../UI/Modal.jsx";
 export default function EventDetails() {
-  const [isDeleting,setIsDeleting]= useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
-  const { mutate } = useMutation({
+  const {
+    mutate,
+    isPending: isPendingDelete,
+    isError: isErrorDelete,
+    error: errorDelete,
+  } = useMutation({
     mutationFn: deleteEvent,
     onSuccess: () => {
-      QueryClient.invalidateQueries({ queryKey: ["events"] ,refetchType:'none'});
+      queryClient.invalidateQueries({
+        queryKey: ["events"],
+        refetchType: "none",
+      });
       navigate("/events");
     },
   });
@@ -20,10 +29,10 @@ export default function EventDetails() {
     queryKey: ["event", params.id],
     queryFn: ({ signal }) => fetchEvent({ id: params.id, signal }),
   });
-  function handleStartDelete(){
+  function handleStartDelete() {
     setIsDeleting(true);
   }
-  function handleCancelDelete(){
+  function handleCancelDelete() {
     setIsDeleting(false);
   }
   const handleDelete = () => {
@@ -77,6 +86,31 @@ export default function EventDetails() {
   }
   return (
     <>
+      {isDeleting && (
+        <Modal onClose={handleCancelDelete}>
+          <h2>Are you sure?</h2>
+          <p>是否确定删除？</p>
+          <div className="form-actions">
+            {isPendingDelete && <p>删除中，请稍候...</p>}
+            {!isPendingDelete && (
+              <>
+                <button onClick={handleCancelDelete} className="button-text">
+                  Cancel
+                </button>
+                <button onClick={handleDelete} className="button">
+                  Delete
+                </button>
+              </>
+            )}
+          </div>
+          {isErrorDelete && (
+            <ErrorBlock
+              title={"删除失败"}
+              message={errorDelete.info?.message || "请稍后重试"}
+            ></ErrorBlock>
+          )}
+        </Modal>
+      )}
       <Outlet />
       <Header>
         <Link to="/events" className="nav-item">
