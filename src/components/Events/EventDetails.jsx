@@ -4,7 +4,9 @@ import Header from "../Header.jsx";
 import { fetchEvent, deleteEvent } from "../../util/http.js";
 import { useParams } from "react-router-dom";
 import ErrorBlock from "../UI/ErrorBlock.jsx";
+import { useState } from "react";
 export default function EventDetails() {
+  const [isDeleting,setIsDeleting]= useState(false);
   const navigate = useNavigate();
   const { mutate } = useMutation({
     mutationFn: deleteEvent,
@@ -18,6 +20,12 @@ export default function EventDetails() {
     queryKey: ["event", params.id],
     queryFn: ({ signal }) => fetchEvent({ id: params.id, signal }),
   });
+  function handleStartDelete(){
+    setIsDeleting(true);
+  }
+  function handleCancelDelete(){
+    setIsDeleting(false);
+  }
   const handleDelete = () => {
     mutate({ id: params.id });
   };
@@ -48,7 +56,7 @@ export default function EventDetails() {
         <header>
           <h1>{data.title}</h1>
           <nav>
-            <button onClick={handleDelete}>Delete</button>
+            <button onClick={handleStartDelete}>Delete</button>
             <Link to="edit">Edit</Link>
           </nav>
         </header>
